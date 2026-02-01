@@ -3,9 +3,10 @@ import { Command } from "commander";
 import chalk from "chalk";
 import path from "node:path";
 
-import { readRowsFromCsv, readTextFromPdf, writeJson } from "./io.js";
+import { readRecordsFromCsv, readRowsFromCsv, readTextFromPdf, writeJson } from "./io.js";
 import { TransactionsFileSchema } from "./schema.js";
 import { parseGenericCsv } from "./parsers/csv-generic.js";
+import { parseSmbcOliveCsv } from "./parsers/smbc-olive.js";
 import { createLlmClient } from "./llm/index.js";
 import { parsePdfWithLlm } from "./parsers/pdf-llm.js";
 
@@ -22,6 +23,7 @@ program
   .argument("<input>", "Input file path (.csv or .pdf)")
   .option("-o, --out <path>", "Output JSON path", "./out/transactions.json")
   .option("--type <type>", "Force type: csv|pdf")
+  .option("--parser <parser>", "CSV parser: generic|smbc-olive", "generic")
   .option("--account <name>", "Account label")
   .option("--currency <code>", "Currency (JPY/USD/EUR...)", "JPY")
   .action(async (input, opts) => {
@@ -31,8 +33,15 @@ program
     let transactions = [];
 
     if (type === "csv") {
-      const rows = await readRowsFromCsv(input);
-      transactions = parseGenericCsv(rows, { file: input, account: opts.account, currency: opts.currency });
+      const parser = String(opts.parser ?? "generic");
+
+      if (parser === "smbc-olive") {
+        const records = await readRecordsFromCsv({ filePath: input, encoding: "cp932" });
+        transactions = parseSmbcOliveCsv(records, { file: input, account: opts.account, currency: opts.currency });
+      } else {
+        const rows = await readRowsFromCsv(input);
+        transactions = parseGenericCsv(rows, { file: input, account: opts.account, currency: opts.currency });
+      }
     } else if (type === "pdf") {
       const text = await readTextFromPdf(input);
       const llm = createLlmClient();

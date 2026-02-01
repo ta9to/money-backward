@@ -1,6 +1,7 @@
 node_modules/
 dist/
 out/
+fixtures/
 .DS_Store
 .env
 .env.*

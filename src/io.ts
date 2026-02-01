@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import pdf from "pdf-parse";
 import { parse as parseCsv } from "csv-parse/sync";
+import iconv from "iconv-lite";
 
 export async function readTextFromPdf(filePath: string): Promise<string> {
   const buf = await fs.readFile(filePath);
@@ -19,6 +20,25 @@ export async function readRowsFromCsv(filePath: string): Promise<Record<string, 
     trim: true
   }) as Record<string, string>[];
   return rows;
+}
+
+export async function readRecordsFromCsv(args: {
+  filePath: string;
+  encoding?: "utf8" | "cp932";
+}): Promise<string[][]> {
+  const buf = await fs.readFile(args.filePath);
+  const encoding = args.encoding ?? "utf8";
+  const raw = encoding === "cp932" ? iconv.decode(buf, "cp932") : buf.toString("utf8");
+
+  const records = parseCsv(raw, {
+    columns: false,
+    skip_empty_lines: true,
+    bom: true,
+    relax_column_count: true,
+    trim: true
+  }) as string[][];
+
+  return records;
 }
 
 export async function ensureDirForFile(filePath: string) {
