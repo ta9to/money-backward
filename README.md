@@ -29,10 +29,15 @@ node dist/cli.js export-csv ./out/merged.json --out ./out/merged.csv
 python -m venv .venv
 source .venv/bin/activate
 pip install -r dashboard/requirements.txt
+
+# (optional) copy category rules and edit
+cp dashboard/categories.example.yaml dashboard/categories.yaml
+
 streamlit run dashboard/app.py
 
 # Optionally:
 # MONEY_BACKWARD_CSV=./out/merged.csv streamlit run dashboard/app.py
+# MONEY_BACKWARD_CATEGORIES_YAML=dashboard/categories.yaml streamlit run dashboard/app.py
 ```
 
 ## Usage

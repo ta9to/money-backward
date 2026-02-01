@@ -1,0 +1,36 @@
+# Copy to `categories.yaml` and edit.
+# Rules are evaluated top-to-bottom.
+# - name: category label
+# - patterns: list of regex patterns (case-insensitive)
+
+rules:
+  - name: Subscriptions
+    patterns:
+      - "UNEXT|ユーネクスト|NETFLIX|Spotify"
+      - "Apple\\.com/bill|Google"
+
+  - name: Shopping
+    patterns:
+      - "Amazon|AMZN|楽天|Rakuten"
+
+  - name: Convenience
+    patterns:
+      - "コンビニ|セブン|ローソン|ファミマ|FamilyMart"
+
+  - name: Transport
+    patterns:
+      - "Suica|PASMO|JR|東京メトロ|バス|タクシー"
+
+  - name: Utilities
+    patterns:
+      - "電気|ガス|水道|Utilities"
+
+  - name: Health
+    patterns:
+      - "病院|薬局|クリニック|Dent|歯科"
+
+  - name: Food
+    patterns:
+      - "居酒屋|レストラン|カフェ|スタバ|Starbucks"
+
+default: Uncategorized

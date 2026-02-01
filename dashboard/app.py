@@ -1,9 +1,10 @@
 import os
-import re
 from datetime import datetime
 
 import pandas as pd
 import streamlit as st
+
+from categorize import categorize, load_rules
 
 
 st.set_page_config(page_title="money-backward dashboard", layout="wide")
@@ -16,13 +17,20 @@ DEFAULT_CSV = os.environ.get("MONEY_BACKWARD_CSV", "./out/merged.csv")
 with st.sidebar:
     st.header("Data")
     csv_path = st.text_input("CSV path", value=DEFAULT_CSV)
+
+    st.header("Categories")
+    st.caption("Edit dashboard/categories.yaml (copied from categories.example.yaml)")
+    st.code(
+        os.environ.get("MONEY_BACKWARD_CATEGORIES_YAML", "dashboard/categories.yaml"),
+        language="text",
+    )
+
     reload_btn = st.button("Reload")
 
 
 @st.cache_data(show_spinner=False)
 def load_csv(p: str) -> pd.DataFrame:
     df = pd.read_csv(p)
-    # Normalize types
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
     for c in ["currency", "description", "merchant", "category", "account"]:
@@ -31,25 +39,14 @@ def load_csv(p: str) -> pd.DataFrame:
     return df
 
 
-def infer_category(desc: str) -> str:
-    # Very small rule-based categorizer. Edit freely.
-    rules = [
-        (r"(UNEXT|ユーネクスト|NETFLIX|Spotify|Apple\.com/bill|Google)" , "Subscriptions"),
-        (r"(Amazon|AMZN|楽天|Rakuten)" , "Shopping"),
-        (r"(コンビニ|セブン|ローソン|ファミマ|FamilyMart)" , "Convenience"),
-        (r"(Suica|PASMO|JR|東京メトロ|バス|タクシー)" , "Transport"),
-        (r"(電気|ガス|水道|Utilities)" , "Utilities"),
-        (r"(病院|薬局|クリニック|Dent|歯科)" , "Health"),
-        (r"(居酒屋|レストラン|カフェ|スタバ|Starbucks)" , "Food"),
-    ]
-    for pat, cat in rules:
-        if re.search(pat, desc, flags=re.IGNORECASE):
-            return cat
-    return "Uncategorized"
+@st.cache_data(show_spinner=False)
+def load_category_rules():
+    return load_rules()
 
 
 if reload_btn:
     load_csv.clear()  # type: ignore[attr-defined]
+    load_category_rules.clear()  # type: ignore[attr-defined]
 
 try:
     df = load_csv(csv_path)
@@ -61,6 +58,8 @@ if df.empty:
     st.warning("No rows.")
     st.stop()
 
+rules, default_cat = load_category_rules()
+
 # Fill merchant fallback
 if "merchant" in df.columns:
     df.loc[df["merchant"].eq(""), "merchant"] = df["description"]
@@ -69,7 +68,8 @@ if "merchant" in df.columns:
 if "category" not in df.columns:
     df["category"] = ""
 
-df.loc[df["category"].eq(""), "category"] = df.loc[df["category"].eq(""), "description"].map(infer_category)
+need = df["category"].eq("")
+df.loc[need, "category"] = df.loc[need, "description"].map(lambda s: categorize(s, rules, default_cat))
 
 # Sidebar filters
 with st.sidebar:
