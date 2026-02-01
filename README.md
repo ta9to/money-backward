@@ -6,4 +6,30 @@
 
 > **"I canceled my subscription to build this."**
 
-`money-backward` is a CLI tool that leverages Claude Code (LLM) to convert raw financial data (PDF/CSV) into structured JSON, providing a private, customizable dashboard for your personal finances.
+`money-backward` is a CLI tool to convert raw financial exports (CSV/PDF) into **normalized transaction JSON**, as input for a private, customizable dashboard.
+
+## Status
+MVP scaffolding is in place:
+- CSV ingest (generic header-based)
+- PDF ingest pipeline (text extraction + LLM hook) — **LLM adapter not implemented yet**
+
+## Install (dev)
+```bash
+npm i
+npm run build
+```
+
+## Usage
+```bash
+# Print schema
+node dist/cli.js schema
+
+# Ingest CSV
+node dist/cli.js ingest ./statement.csv --out ./out/transactions.json --account "My Account" --currency JPY
+
+# Ingest PDF (requires LLM adapter; currently errors unless provider=none and you don't use pdf mode)
+node dist/cli.js ingest ./statement.pdf --type pdf --out ./out/transactions.json
+```
+
+## Design notes
+See `DESIGN.md`.
