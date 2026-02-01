@@ -139,7 +139,7 @@ with c2:
         .sort_values("expense", ascending=False)
         .head(20)
     )
-    st.dataframe(by_merch, use_container_width=True, hide_index=True)
+    st.dataframe(by_merch, width="stretch", hide_index=True)
 
 st.subheader("Categorize (learn rules)")
 st.caption("Pick a transaction and append a regex pattern to the YAML rules.")
@@ -195,4 +195,4 @@ with c_note:
     )
 
 st.subheader("Transactions")
-st.dataframe(work, use_container_width=True, hide_index=True)
+st.dataframe(work, width="stretch", hide_index=True)
