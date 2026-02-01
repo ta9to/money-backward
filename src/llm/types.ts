@@ -1,4 +1,4 @@
-export type LlmProvider = "none" | "openai" | "anthropic";
+export type LlmProvider = "none" | "claude-cli" | "openai" | "anthropic";
 
 export type LlmClient = {
   provider: LlmProvider;

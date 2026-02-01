@@ -11,7 +11,7 @@
 ## Status
 MVP scaffolding is in place:
 - CSV ingest (generic header-based)
-- PDF ingest pipeline (text extraction + LLM hook) — **LLM adapter not implemented yet**
+- PDF ingest pipeline (text extraction + LLM hook) — **Claude Code CLI adapter available** (`claude` OAuth)
 
 ## Install (dev)
 ```bash
@@ -27,8 +27,8 @@ node dist/cli.js schema
 # Ingest CSV
 node dist/cli.js ingest ./statement.csv --out ./out/transactions.json --account "My Account" --currency JPY
 
-# Ingest PDF (requires LLM adapter; currently errors unless provider=none and you don't use pdf mode)
-node dist/cli.js ingest ./statement.pdf --type pdf --out ./out/transactions.json
+# Ingest PDF (Claude Code CLI)
+MONEY_BACKWARD_LLM_PROVIDER=claude-cli node dist/cli.js ingest ./statement.pdf --type pdf --out ./out/transactions.json
 ```
 
 ## Design notes
