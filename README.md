@@ -34,6 +34,7 @@ pip install -r dashboard/requirements.txt
 cp dashboard/categories.example.yaml dashboard/categories.yaml
 
 streamlit run dashboard/app.py
+# Then use the "Categorize (learn rules)" section to add patterns.
 
 # Optionally:
 # MONEY_BACKWARD_CSV=./out/merged.csv streamlit run dashboard/app.py

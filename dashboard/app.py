@@ -1,10 +1,11 @@
 import os
+import re
 from datetime import datetime
 
 import pandas as pd
 import streamlit as st
 
-from categorize import categorize, load_rules
+from categorize import add_rule_pattern, categorize, load_rules, resolve_rules_path
 
 
 st.set_page_config(page_title="money-backward dashboard", layout="wide")
@@ -19,11 +20,9 @@ with st.sidebar:
     csv_path = st.text_input("CSV path", value=DEFAULT_CSV)
 
     st.header("Categories")
-    st.caption("Edit dashboard/categories.yaml (copied from categories.example.yaml)")
-    st.code(
-        os.environ.get("MONEY_BACKWARD_CATEGORIES_YAML", "dashboard/categories.yaml"),
-        language="text",
-    )
+    rules_path = resolve_rules_path()
+    st.caption("Rules YAML (edit directly, or use the UI below to append patterns)")
+    st.code(rules_path, language="text")
 
     reload_btn = st.button("Reload")
 
@@ -142,9 +141,52 @@ with c2:
     )
     st.dataframe(by_merch, use_container_width=True, hide_index=True)
 
-st.subheader("Transactions")
-st.dataframe(
-    d.sort_values("date", ascending=False),
-    use_container_width=True,
-    hide_index=True,
+st.subheader("Categorize (learn rules)")
+st.caption("Pick a transaction and append a regex pattern to the YAML rules.")
+
+# Work on a recent slice to keep UI snappy
+work = d.sort_values("date", ascending=False).copy().reset_index(drop=True)
+max_rows = st.slider("Rows shown", min_value=50, max_value=1000, value=200, step=50)
+work = work.head(max_rows)
+
+idx = st.selectbox(
+    "Select row",
+    options=list(range(len(work))),
+    format_func=lambda i: f"{work.loc[i, 'date'].date()}  {work.loc[i, 'amount']:,.0f}  {work.loc[i, 'description']}",
 )
+row = work.loc[int(idx)]
+
+existing_categories = sorted([c for c in df["category"].unique().tolist() if c])
+cat = st.selectbox("Assign category", options=existing_categories, index=0 if existing_categories else None)
+
+suggest = row.get("merchant", "") or row.get("description", "")
+mode = st.radio("Pattern mode", options=["contains", "exact"], horizontal=True)
+if mode == "exact":
+    pattern_default = f"^{re.escape(str(suggest))}$"
+else:
+    pattern_default = re.escape(str(suggest))
+
+pattern = st.text_input("Regex pattern (case-insensitive)", value=pattern_default)
+
+c_apply, c_note = st.columns([1, 2])
+with c_apply:
+    if st.button("Add rule"):
+        try:
+            if rules_path.endswith("categories.example.yaml"):
+                st.error(
+                    "You're using categories.example.yaml. Copy it first: cp dashboard/categories.example.yaml dashboard/categories.yaml"
+                )
+            else:
+                add_rule_pattern(path=rules_path, category=cat, pattern=pattern)
+                st.success(f"Added pattern to {cat}: {pattern}")
+                load_category_rules.clear()  # type: ignore[attr-defined]
+                st.rerun()
+        except Exception as e:
+            st.error(str(e))
+with c_note:
+    st.write(
+        "Tip: Use **exact** for noisy merchants you want to pin precisely. Use **contains** for broad matches."
+    )
+
+st.subheader("Transactions")
+st.dataframe(work, use_container_width=True, hide_index=True)
