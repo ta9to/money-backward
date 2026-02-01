@@ -157,7 +157,11 @@ idx = st.selectbox(
 row = work.loc[int(idx)]
 
 existing_categories = sorted([c for c in df["category"].unique().tolist() if c])
-cat = st.selectbox("Assign category", options=existing_categories, index=0 if existing_categories else None)
+cat_mode = st.radio("Category", options=["existing", "new"], horizontal=True)
+if cat_mode == "new":
+    cat = st.text_input("New category name", value="")
+else:
+    cat = st.selectbox("Assign category", options=existing_categories, index=0 if existing_categories else 0)
 
 suggest = row.get("merchant", "") or row.get("description", "")
 mode = st.radio("Pattern mode", options=["contains", "exact"], horizontal=True)
@@ -176,9 +180,11 @@ with c_apply:
                 st.error(
                     "You're using categories.example.yaml. Copy it first: cp dashboard/categories.example.yaml dashboard/categories.yaml"
                 )
+            elif not str(cat).strip():
+                st.error("Category name is empty")
             else:
-                add_rule_pattern(path=rules_path, category=cat, pattern=pattern)
-                st.success(f"Added pattern to {cat}: {pattern}")
+                add_rule_pattern(path=rules_path, category=str(cat).strip(), pattern=pattern)
+                st.success(f"Added pattern to {str(cat).strip()}: {pattern}")
                 load_category_rules.clear()  # type: ignore[attr-defined]
                 st.rerun()
         except Exception as e:
