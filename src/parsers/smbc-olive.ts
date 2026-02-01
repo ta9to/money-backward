@@ -22,11 +22,15 @@ export function parseSmbcOliveCsv(
 
     if (r.length < 3) continue;
 
-    const dateRaw = r[0];
-    const descRaw = r[1];
+    // Some rows contain commas in description (e.g., "NOTION LABS, INC.") and are not quoted,
+    // which shifts columns. Reconstruct the row by reading numeric columns from the right.
+    const normalized = normalizeRow(r);
+
+    const dateRaw = normalized.date;
+    const descRaw = normalized.description;
 
     // Prefer "支払金額" column when present, otherwise use "利用金額".
-    const amountCandidate = firstNonEmpty([r[5], r[2]]);
+    const amountCandidate = firstNonEmpty([normalized.paymentAmount, normalized.amount]);
     if (!dateRaw || !descRaw || !amountCandidate) continue;
 
     const date = normalizeDate(dateRaw);
@@ -39,7 +43,7 @@ export function parseSmbcOliveCsv(
       description: descRaw,
       merchant: descRaw,
       account: opts.account ?? "SMBC Olive",
-      source: { file: opts.file, row: i + 1, raw: toRawObject(r) }
+      source: { file: opts.file, row: i + 1, raw: toRawObject(normalized.raw) }
     };
     out.push(tx);
   }
@@ -85,8 +89,53 @@ function firstNonEmpty(xs: Array<string | undefined>): string | undefined {
   return undefined;
 }
 
+function normalizeRow(r: string[]): {
+  date: string;
+  description: string;
+  amount?: string;
+  paymentType?: string;
+  count?: string;
+  paymentAmount?: string;
+  note?: string;
+  raw: string[];
+} {
+  // Expected canonical shape (note optional):
+  // [date, description, amount, paymentType, count, paymentAmount, note?]
+  if (r.length === 6 || r.length === 7) {
+    return {
+      date: r[0],
+      description: r[1],
+      amount: r[2],
+      paymentType: r[3],
+      count: r[4],
+      paymentAmount: r[5],
+      note: r.length === 7 ? r[6] : undefined,
+      raw: r
+    };
+  }
+
+  // If description contains commas and isn't quoted, it'll be split across columns.
+  // Reconstruct by reading from the right.
+  const note = r[r.length - 1];
+  const paymentAmount = r[r.length - 2];
+  const count = r[r.length - 3];
+  const paymentType = r[r.length - 4];
+  const amount = r[r.length - 5];
+  const description = r.slice(1, r.length - 5).join(",");
+
+  return {
+    date: r[0],
+    description,
+    amount,
+    paymentType,
+    count,
+    paymentAmount,
+    note,
+    raw: [r[0], description, amount, paymentType, count, paymentAmount, note]
+  };
+}
+
 function toRawObject(r: string[]): Record<string, string> {
-  // Keep stable keys even without header.
   const keys = ["date", "description", "amount", "paymentType", "count", "paymentAmount", "note"];
   const o: Record<string, string> = {};
   for (let i = 0; i < Math.min(keys.length, r.length); i++) o[keys[i]] = r[i];
