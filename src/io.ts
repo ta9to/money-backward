@@ -22,6 +22,26 @@ export async function readRowsFromCsv(filePath: string): Promise<Record<string, 
   return rows;
 }
 
+export async function readRowsFromCsvWithEncoding(args: {
+  filePath: string;
+  encoding?: "utf8" | "cp932";
+}): Promise<Record<string, string>[]> {
+  const buf = await fs.readFile(args.filePath);
+  const encoding = args.encoding ?? "utf8";
+  const raw = encoding === "cp932" ? iconv.decode(buf, "cp932") : buf.toString("utf8");
+
+  const rows = parseCsv(raw, {
+    columns: true,
+    skip_empty_lines: true,
+    bom: true,
+    relax_quotes: true,
+    relax_column_count: true,
+    trim: true
+  }) as Record<string, string>[];
+
+  return rows;
+}
+
 export async function readRecordsFromCsv(args: {
   filePath: string;
   encoding?: "utf8" | "cp932";

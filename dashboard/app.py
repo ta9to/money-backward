@@ -110,12 +110,21 @@ k3.metric("Net", f"{net:,.0f}")
 
 # Monthly time series
 st.subheader("Monthly")
+md = d.assign(month=d["date"].dt.to_period("M").astype(str))
 monthly = (
-    d.assign(month=d["date"].dt.to_period("M").astype(str))
-    .groupby("month", as_index=False)["amount"]
+    md.groupby("month", as_index=False)["amount"].sum().rename(columns={"amount": "net"})
+)
+monthly_income = md.loc[md["amount"] > 0].groupby("month", as_index=False)["amount"].sum().rename(columns={"amount": "income"})
+monthly_expense = (
+    md.loc[md["amount"] < 0]
+    .assign(expense=lambda x: -x["amount"])
+    .groupby("month", as_index=False)["expense"]
     .sum()
 )
-st.line_chart(monthly, x="month", y="amount")
+monthly = monthly.merge(monthly_income, on="month", how="left").merge(monthly_expense, on="month", how="left")
+monthly[["income", "expense"]] = monthly[["income", "expense"]].fillna(0)
+
+st.line_chart(monthly, x="month", y=["income", "expense", "net"])
 
 c1, c2 = st.columns(2)
 with c1:

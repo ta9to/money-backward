@@ -3,10 +3,17 @@ import { Command } from "commander";
 import chalk from "chalk";
 import path from "node:path";
 
-import { readRecordsFromCsv, readRowsFromCsv, readTextFromPdf, writeJson } from "./io.js";
+import {
+  readRecordsFromCsv,
+  readRowsFromCsv,
+  readRowsFromCsvWithEncoding,
+  readTextFromPdf,
+  writeJson
+} from "./io.js";
 import { TransactionsFileSchema } from "./schema.js";
 import { parseGenericCsv } from "./parsers/csv-generic.js";
 import { parseSmbcOliveCsv } from "./parsers/smbc-olive.js";
+import { parseSmbcBankCsv } from "./parsers/smbc-bank.js";
 import { createLlmClient } from "./llm/index.js";
 import { parsePdfWithLlm } from "./parsers/pdf-llm.js";
 import { listJsonFiles, readTransactionsFile } from "./merge.js";
@@ -26,7 +33,7 @@ program
   .argument("<input>", "Input file path (.csv or .pdf)")
   .option("-o, --out <path>", "Output JSON path", "./out/transactions.json")
   .option("--type <type>", "Force type: csv|pdf")
-  .option("--parser <parser>", "CSV parser: generic|smbc-olive", "generic")
+  .option("--parser <parser>", "CSV parser: generic|smbc-olive|smbc-bank", "generic")
   .option("--account <name>", "Account label")
   .option("--currency <code>", "Currency (JPY/USD/EUR...)", "JPY")
   .action(async (input, opts) => {
@@ -41,6 +48,9 @@ program
       if (parser === "smbc-olive") {
         const records = await readRecordsFromCsv({ filePath: input, encoding: "cp932" });
         transactions = parseSmbcOliveCsv(records, { file: input, account: opts.account, currency: opts.currency });
+      } else if (parser === "smbc-bank") {
+        const rows = await readRowsFromCsvWithEncoding({ filePath: input, encoding: "cp932" });
+        transactions = parseSmbcBankCsv(rows, { file: input, account: opts.account, currency: opts.currency });
       } else {
         const rows = await readRowsFromCsv(input);
         transactions = parseGenericCsv(rows, { file: input, account: opts.account, currency: opts.currency });
