@@ -25,7 +25,7 @@ export const TransactionSchema = z.object({
     .object({
       file: z.string().optional(),
       row: z.number().int().positive().optional(),
-      raw: z.record(z.any()).optional()
+      raw: z.union([z.record(z.any()), z.string()]).optional()
     })
     .optional()
 });
