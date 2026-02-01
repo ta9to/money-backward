@@ -20,10 +20,23 @@ rules:
   - name: Transport
     patterns:
       - "Suica|PASMO|JR|東京メトロ|バス|タクシー"
+      - "ＥＴＣ|ETC|首都高|関東支社"
 
   - name: Utilities
     patterns:
       - "電気|ガス|水道|Utilities"
+
+  - name: Salary
+    patterns:
+      - "給与|ｷﾕｳﾖ|賞与|ﾎﾞｰﾅｽ"
+
+  - name: Transfers
+    patterns:
+      - "振込|ﾌﾘｺﾐ|振替|ﾌﾘｶｴ"
+
+  - name: Card Payment
+    patterns:
+      - "ｶｰﾄﾞ|カード|ｸﾚｼﾞｯﾄ|クレジット|PAYPAYｶ-ﾄﾞ"
 
   - name: Health
     patterns:
