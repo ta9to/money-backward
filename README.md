@@ -19,6 +19,22 @@ npm i
 npm run build
 ```
 
+## Dashboard (Streamlit)
+```bash
+# 1) Prepare data
+node dist/cli.js merge ./out/*.json --out ./out/merged.json --dedupe
+node dist/cli.js export-csv ./out/merged.json --out ./out/merged.csv
+
+# 2) Run dashboard
+python -m venv .venv
+source .venv/bin/activate
+pip install -r dashboard/requirements.txt
+streamlit run dashboard/app.py
+
+# Optionally:
+# MONEY_BACKWARD_CSV=./out/merged.csv streamlit run dashboard/app.py
+```
+
 ## Usage
 ```bash
 # Print schema
