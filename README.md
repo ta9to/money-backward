@@ -24,11 +24,22 @@ npm run build
 # Print schema
 node dist/cli.js schema
 
-# Ingest CSV
-node dist/cli.js ingest ./statement.csv --out ./out/transactions.json --account "My Account" --currency JPY
+# Ingest SMBC Olive CSV (CP932 / no header)
+node dist/cli.js ingest ./statement.csv --parser smbc-olive --out ./out/smbc.json --account "SMBC Olive" --currency JPY
+
+# Ingest generic CSV (header-based)
+node dist/cli.js ingest ./statement.csv --parser generic --out ./out/transactions.json --account "My Account" --currency JPY
+
+# Merge + dedupe
+node dist/cli.js merge ./out/*.json --out ./out/merged.json --dedupe
+
+# Export CSV for pandas/streamlit
+node dist/cli.js export-csv ./out/merged.json --out ./out/merged.csv
 
 # Ingest PDF (Claude Code CLI)
-MONEY_BACKWARD_LLM_PROVIDER=claude-cli node dist/cli.js ingest ./statement.pdf --type pdf --out ./out/transactions.json
+MONEY_BACKWARD_LLM_PROVIDER=claude-cli \
+MONEY_BACKWARD_CLAUDE_BIN="/Users/ta9to/Library/Application Support/Claude/claude-code/<version>/claude" \
+node dist/cli.js ingest ./statement.pdf --type pdf --out ./out/transactions.json
 ```
 
 ## Design notes

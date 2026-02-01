@@ -9,6 +9,9 @@ import { parseGenericCsv } from "./parsers/csv-generic.js";
 import { parseSmbcOliveCsv } from "./parsers/smbc-olive.js";
 import { createLlmClient } from "./llm/index.js";
 import { parsePdfWithLlm } from "./parsers/pdf-llm.js";
+import { listJsonFiles, readTransactionsFile } from "./merge.js";
+import { dedupeTransactions } from "./dedupe.js";
+import { writeTransactionsCsv } from "./export.js";
 
 const program = new Command();
 
@@ -73,10 +76,62 @@ program
   });
 
 program
+  .command("merge")
+  .description("Merge multiple normalized JSON files into one (optionally dedupe).")
+  .argument("<inputs...>", "Input JSON files (supports simple globs like out/*.json)")
+  .option("-o, --out <path>", "Output JSON path", "./out/merged.json")
+  .option("--dedupe", "Dedupe transactions (recommended)", true)
+  .action(async (inputs: string[], opts) => {
+    const files = await listJsonFiles(inputs);
+    if (files.length === 0) throw new Error("No input files matched");
+
+    let all = [] as any[];
+    for (const f of files) {
+      const txs = await readTransactionsFile(f);
+      all.push(...txs);
+    }
+
+    let removed = 0;
+    if (opts.dedupe) {
+      const r = dedupeTransactions(all);
+      all = r.transactions;
+      removed = r.removed;
+    }
+
+    const out = {
+      version: 1 as const,
+      generatedAt: new Date().toISOString(),
+      tool: "money-backward@0.1.0",
+      transactions: all
+    };
+
+    const parsed = TransactionsFileSchema.parse(out);
+    await writeJson(opts.out, parsed);
+
+    console.log(
+      chalk.green(
+        `OK: merged ${files.length} file(s), ${parsed.transactions.length} txs` +
+          (opts.dedupe ? ` (deduped: -${removed})` : "") +
+          ` -> ${opts.out}`
+      )
+    );
+  });
+
+program
+  .command("export-csv")
+  .description("Export a normalized JSON file to CSV (streamlit/pandas friendly).")
+  .argument("<input>", "Input normalized JSON")
+  .option("-o, --out <path>", "Output CSV path", "./out/transactions.csv")
+  .action(async (input, opts) => {
+    const txs = await readTransactionsFile(input);
+    await writeTransactionsCsv(opts.out, txs);
+    console.log(chalk.green(`OK: wrote ${txs.length} rows -> ${opts.out}`));
+  });
+
+program
   .command("schema")
   .description("Print the JSON schema (rough) for the normalized output.")
   .action(() => {
-    // Keep it simple: point to source for now.
     console.log(
       [
         "Normalized output is a JSON object:",
@@ -89,7 +144,7 @@ program
         "- merchant?: string",
         "- category?: string",
         "- account?: string",
-        "- source?: { file?: string, row?: number, raw?: object }"
+        "- source?: { file?: string, row?: number, raw?: object|string }"
       ].join("\n")
     );
   });
