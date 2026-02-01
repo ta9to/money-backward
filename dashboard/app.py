@@ -17,14 +17,18 @@ DEFAULT_CSV = os.environ.get("MONEY_BACKWARD_CSV", "./out/merged.csv")
 
 with st.sidebar:
     st.header("Data")
-    csv_path = st.text_input("CSV path", value=DEFAULT_CSV)
+    csv_path = st.text_input("CSV path", value=DEFAULT_CSV, key="csv_path")
 
     st.header("Categories")
     rules_path = resolve_rules_path()
     st.caption("Rules YAML (edit directly, or use the UI below to append patterns)")
     st.code(rules_path, language="text")
 
-    reload_btn = st.button("Reload")
+    c1, c2 = st.columns(2)
+    with c1:
+        reload_btn = st.button("Reload")
+    with c2:
+        reset_btn = st.button("Reset")
 
 
 @st.cache_data(show_spinner=False)
@@ -46,6 +50,13 @@ def load_category_rules():
 if reload_btn:
     load_csv.clear()  # type: ignore[attr-defined]
     load_category_rules.clear()  # type: ignore[attr-defined]
+
+if 'reset_btn' in locals() and reset_btn:
+    # Clear widget state back to defaults
+    for k in ["date_range", "account_filter", "category_filter"]:
+        if k in st.session_state:
+            del st.session_state[k]
+    st.rerun()
 
 try:
     df = load_csv(csv_path)
@@ -80,13 +91,14 @@ with st.sidebar:
         value=(min_date.date(), max_date.date()),
         min_value=min_date.date(),
         max_value=max_date.date(),
+        key="date_range",
     )
 
     accounts = sorted([a for a in df.get("account", pd.Series(dtype=str)).unique().tolist() if a])
-    account_sel = st.multiselect("Account", options=accounts, default=accounts)
+    account_sel = st.multiselect("Account", options=accounts, default=accounts, key="account_filter")
 
     categories = sorted([c for c in df["category"].unique().tolist() if c])
-    category_sel = st.multiselect("Category", options=categories, default=categories)
+    category_sel = st.multiselect("Category", options=categories, default=categories, key="category_filter")
 
 # Apply filters
 start, end = date_range
