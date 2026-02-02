@@ -16,7 +16,7 @@ rules:
 
   - name: Convenience
     patterns:
-      - "コンビニ|セブン|７\-ＥＬＥＶＥＮ|ローソン|ファミマ|FamilyMart|ミニストップ"
+      - "コンビニ|セブン|７-ＥＬＥＶＥＮ|ローソン|ファミマ|FamilyMart|ミニストップ"
 
   - name: Transport
     patterns:
