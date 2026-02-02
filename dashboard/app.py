@@ -4,6 +4,7 @@ from datetime import datetime
 
 import pandas as pd
 import streamlit as st
+import plotly.express as px
 
 from categorize import add_rule_pattern, categorize, load_rules, resolve_rules_path
 
@@ -260,33 +261,84 @@ with tabs[1]:
         c2.metric("Expense", f"{m_expense:,.0f}", delta=(f"{d_expense:+,.0f}" if d_expense is not None else None))
         c3.metric("Net", f"{m_net:,.0f}", delta=(f"{d_net:+,.0f}" if d_net is not None else None))
 
-        c4, c5 = st.columns(2)
-        with c4:
-            st.subheader("Top categories (expense)")
-            m_by_cat = (
-                mdf.loc[mdf["amount"] < 0]
-                .assign(expense=lambda x: -x["amount"])
-                .groupby("category", as_index=False)["expense"]
-                .sum()
-                .sort_values("expense", ascending=False)
-            )
-            st.bar_chart(m_by_cat.head(12), x="category", y="expense")
+        st.divider()
+        mode = st.radio("View", options=["Expense", "Income"], horizontal=True, key="monthly_view")
 
-        with c5:
-            st.subheader("Top merchants (expense)")
-            m_by_merch = (
-                mdf.loc[mdf["amount"] < 0]
-                .assign(expense=lambda x: -x["amount"])
-                .groupby("merchant", as_index=False)["expense"]
-                .sum()
-                .sort_values("expense", ascending=False)
-                .head(20)
-            )
-            st.dataframe(m_by_merch, width="stretch", hide_index=True)
+        if mode == "Expense":
+            base = mdf.loc[mdf["amount"] < 0].assign(value=lambda x: -x["amount"])
+            value_label = "expense"
+        else:
+            base = mdf.loc[mdf["amount"] > 0].assign(value=lambda x: x["amount"])
+            value_label = "income"
 
-        st.subheader("Transactions (this month)")
-        st.dataframe(
-            mdf.sort_values("date", ascending=False),
-            width="stretch",
-            hide_index=True,
-        )
+        if base.empty:
+            st.info(f"No {mode.lower()} rows for this month.")
+        else:
+            by_cat = (
+                base.groupby("category", as_index=False)["value"]
+                .sum()
+                .rename(columns={"value": value_label})
+                .sort_values(value_label, ascending=False)
+            )
+
+            total = float(by_cat[value_label].sum())
+            top_n = st.slider("Top categories", 5, 20, 10, 1, key="top_n")
+
+            top = by_cat.head(top_n).copy()
+            other_sum = by_cat.iloc[top_n:][value_label].sum()
+            if other_sum > 0:
+                top = pd.concat(
+                    [top, pd.DataFrame([{"category": "Other", value_label: other_sum}])],
+                    ignore_index=True,
+                )
+
+            top["pct"] = (top[value_label] / total * 100.0).round(2)
+
+            c4, c5 = st.columns(2)
+            with c4:
+                st.subheader(f"By category ({mode.lower()})")
+                fig = px.pie(
+                    top,
+                    names="category",
+                    values=value_label,
+                    hole=0.55,
+                )
+                fig.update_traces(textposition="inside", textinfo="percent+label")
+                fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), legend_title_text="")
+                st.plotly_chart(fig, use_container_width=True)
+
+            with c5:
+                st.subheader("Categories")
+                cat_table = top[["category", value_label, "pct"]].copy()
+                cat_table["pct"] = cat_table["pct"].map(lambda x: f"{x:.2f}%")
+                st.dataframe(cat_table, width="stretch", hide_index=True)
+
+                categories = by_cat["category"].tolist()
+                selected_cat = st.selectbox(
+                    "Drill down category",
+                    options=["(all)"] + categories,
+                    index=0,
+                    key="drill_category",
+                )
+
+            # Merchants + transactions, filtered by selected category
+            if selected_cat != "(all)":
+                base2 = base.loc[base["category"] == selected_cat]
+            else:
+                base2 = base
+
+            st.subheader(f"Top merchants ({mode.lower()})")
+            by_merch = (
+                base2.groupby("merchant", as_index=False)["value"]
+                .sum()
+                .rename(columns={"value": value_label})
+                .sort_values(value_label, ascending=False)
+                .head(25)
+            )
+            st.dataframe(by_merch, width="stretch", hide_index=True)
+
+            st.subheader("Transactions (this month)")
+            show = mdf.copy()
+            if selected_cat != "(all)":
+                show = show.loc[show["category"] == selected_cat]
+            st.dataframe(show.sort_values("date", ascending=False), width="stretch", hide_index=True)
