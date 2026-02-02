@@ -314,10 +314,13 @@ with tabs[1]:
                 st.dataframe(cat_table, width="stretch", hide_index=True)
 
                 categories = by_cat["category"].tolist()
+
+                focus_uncat = st.checkbox("Focus Uncategorized", value=("Uncategorized" in categories), key="focus_uncat")
+                default_sel = "Uncategorized" if focus_uncat and "Uncategorized" in categories else "(all)"
                 selected_cat = st.selectbox(
                     "Drill down category",
                     options=["(all)"] + categories,
-                    index=0,
+                    index=(0 if default_sel == "(all)" else (1 + categories.index(default_sel))),
                     key="drill_category",
                 )
 
@@ -336,6 +339,9 @@ with tabs[1]:
                 .head(25)
             )
             st.dataframe(by_merch, width="stretch", hide_index=True)
+
+            if selected_cat == "Uncategorized":
+                st.caption("Tip: Start here. Categorize the top merchants to shrink Uncategorized fast.")
 
             st.subheader("Transactions (this month)")
             show = mdf.copy()

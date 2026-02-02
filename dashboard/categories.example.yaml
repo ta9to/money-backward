@@ -6,25 +6,37 @@
 rules:
   - name: Subscriptions
     patterns:
-      - "UNEXT|ユーネクスト|NETFLIX|Spotify"
-      - "Apple\\.com/bill|Google"
+      - "UNEXT|ユーネクスト|NETFLIX|Spotify|Prime Video|AMAZON PRIME"
+      - "Apple\\.com/bill|Google|iCloud|YouTube"
+      - "NOTION|notion\\.so"
 
   - name: Shopping
     patterns:
-      - "Amazon|AMZN|楽天|Rakuten"
+      - "Amazon|AMZN|楽天|Rakuten|Yahoo!ショッピング|ヨドバシ|ビックカメラ"
 
   - name: Convenience
     patterns:
-      - "コンビニ|セブン|ローソン|ファミマ|FamilyMart"
+      - "コンビニ|セブン|７\-ＥＬＥＶＥＮ|ローソン|ファミマ|FamilyMart|ミニストップ"
 
   - name: Transport
     patterns:
       - "Suica|PASMO|JR|東京メトロ|バス|タクシー"
       - "ＥＴＣ|ETC|首都高|関東支社"
+      - "タイムズ|Times|駐車"
 
   - name: Utilities
     patterns:
-      - "電気|ガス|水道|Utilities"
+      - "東京ガス|ガス|GAS"
+      - "東京電力|TEPCO|電気|電力|でんき"
+      - "水道|上下水道"
+
+  - name: Mobile
+    patterns:
+      - "ソフトバンク|SoftBank|ドコモ|DOCOMO|au|UQ|Y!mobile|ワイモバイル|楽天モバイル"
+
+  - name: Rent/House
+    patterns:
+      - "家賃|賃料|管理会社|保証会社"
 
   - name: Salary
     patterns:
@@ -32,11 +44,12 @@ rules:
 
   - name: Transfers
     patterns:
-      - "振込|ﾌﾘｺﾐ|振替|ﾌﾘｶｴ"
+      - "振込|ﾌﾘｺﾐ|振替|ﾌﾘｶｴ|送金"
 
   - name: Card Payment
     patterns:
-      - "ｶｰﾄﾞ|カード|ｸﾚｼﾞｯﾄ|クレジット|PAYPAYｶ-ﾄﾞ"
+      - "PAYPAYｶ-ﾄﾞ|ペイペイ|PAYPAY"
+      - "ｶｰﾄﾞ|カード|ｸﾚｼﾞｯﾄ|クレジット"
 
   - name: Health
     patterns:
@@ -44,6 +57,6 @@ rules:
 
   - name: Food
     patterns:
-      - "居酒屋|レストラン|カフェ|スタバ|Starbucks"
+      - "居酒屋|レストラン|カフェ|スタバ|Starbucks|Uber Eats|ウーバー"
 
 default: Uncategorized
